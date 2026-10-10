@@ -108,7 +108,7 @@ renderer has none at all.
 | --- | --- |
 | [`manimgl-myplugin`](https://github.com/myabdur212121-afk/manimgl-myplugin) | the package: code, docs, examples, tests |
 | [`manim-projects`](https://github.com/myabdur212121-afk/manim-projects) | his archive; this lives at `2026/manimgl_myplugin/` |
-| this one | the handover, plus the whole workspace |
+| this one | the handover documents only — the old `workspace/` tree was dissolved when the work moved to the live workspace |
 
 `manim-projects` has its own house style — projects by year, each in a
 folder, an index table in the README, **no rendered output**. Respect it;
@@ -138,51 +138,73 @@ ongoing work:
 | `api2` | 55 s | the surface family: place_on_surface, surface_text, surface_mathtex, cell_note, marker |
 | `features` | 29 s | graticule highlights, labels, see_through (probe: +51% grid visible through the globe) |
 | `bncurve` | 26 s | Bengali surface_text — the bend measured, tangent-plane and naive flats for contrast |
-| `sun` | 24 s | the emissive body, light at its centre, corona rim + tail |
+| `sun` | 24.8 s | the emissive body, light at its centre, additive sprite corona (round 2, below) |
+| `solar` | 30.0 s | the whole system, camera flying a keyed schedule, the shell corona (round 3) |
 
 ---
 
 ## 3. Where it stopped
 
-*Updated 2026-10-10; the previous stopping point (the Sun named but not
-started) is preserved in git history.*
+*Updated 2026-10-11; earlier stopping points are preserved in git history.*
 
-**The Sun was started, measured, and filmed — but not put in the plugin.**
-A prototype lives in `our-work/scenes/sun.py` (never imported by the
-package). What the probes settled:
+**The Sun's glow was settled, in three measured rounds.**
 
-- The emissive body works: `Body(texture="sun")` with
-  `globe.set_shading(0, 0, 0)` renders direction-independent (halves
-  401/376 and 353/424 of 765; the rest is the texture's own sunspots).
-  Texture `2k_sun.jpg` from Solar System Scope (CC BY 4.0), now in
-  `~/models`.
-- Moving `camera.light_source` to the sun's centre makes planets lit
-  from it and nothing else: with the light flipped to the antipode the
-  bright half of Venus flipped with it (centroid pull -2.4 px vs
-  +4.0 px).
-- The corona, three candidates measured side by side: a `DotCloud` shell
-  of small dots is the only one with a tail (1.5–2R at about twice the
-  background luminance); nested translucent spheres render perfectly
-  cleanly (the sorting fear was wrong) but stop hard at 1.3R; one big
-  glowing `DotCloud` dot is a smooth rim with a short tail. The demo
-  layers rim + tail: 392 -> 88 -> 62 -> 51 -> 35 out to 2.5R.
-- **Pending his verdict:** whether any of this becomes a `Sun` preset,
-  an emission parameter, or a corona helper in the package. Nothing was
-  committed to the plugin for it.
+- **Round 1 — translucent dot-shells.** Rejected by the user outright:
+  dot-art is not glow.
+- **Round 2 — additive glow sprites.** The renderer (a local 3b1b/manim
+  checkout at `src/manimGL`, never upstream) gained an opt-in
+  `mobject.blend_mode = "add"` — (SRC_ALPHA, ONE) for colour, so light
+  accumulates; the naive (ONE, ONE) was tried first and gives a flat
+  disc because the falloff is ignored. `sun.py` wore five sprite layers:
+  profile 675 → 330 → 231 → 159 → 103 out to 3R, verified against an
+  isolated scene. But sprites face the camera: no depth behaviour. The
+  user's verdict, in his words: *"make a glow effect perfectly in 3d
+  not 2d"*.
+- **Round 3 — fresnel shells, the current answer.** Six true spheres
+  around the sun: one flat photosphere lift (1.019r) plus five
+  inverse-fresnel shells (1.45r…3.3r, powers 1.4…0.6, `depth_write
+  = False`). The WGSL goes in through `set_color_by_code` — the
+  renderer needed no change for the fresnel itself. Opacities are not
+  hand-tuned: each shell was rendered alone, its measured response
+  became the basis, and nnls solved the opacities against the target
+  profile. Result (frame height 10): 684 → 596 → 534 → 377 → 311 →
+  234 → 154 → 121 → 71, decaying smoothly to 3.1R, and the same inside
+  the full scene within ±5%.
 
-**The surface family grew up.** Since the handover the astro API gained
-`place_on_surface`, `surface_text` (any script — Bengali measured: all
-474 points on the r(1+h) shell within 0.002, edge slope 18.09 deg
-against a longitude span of 18.07 deg, so the bend is geometry, not
-font), `surface_tex`, `surface_mathtex`, `surface_cell_note`,
-`surface_point`, `label`, and the pinned `cell_note`; the graticule
-gained highlights, value labels and `see_through`; bodies gained
-`shed_overlays`. `flat_map` was proposed and dropped — the minimal-API
-rule held. Notes 2.13–2.19 record the laws found on the way, including
-2.19: manimlib's `Text`/`Tex` take `color` to Pango but the glyph fills
-come back white, so the plugin carries the colour over with `set_fill`
-— every coloured caption in every video before 2026-10-10 was silently
-monochrome, and the plugin's tests now guard against it (94 green).
+**The 3D claim is proven with Mercury, not asserted.** Found by
+single-planet stills (the only reliable way — bright patches near the
+centre turned out to be corona light and sunspots, not planets):
+in front of the disc the glow is cut — 403 vs 658 around it, 39%;
+behind the disc Mercury is fully hidden, no dot at all; behind the rim
+it shows as a veiled smudge, 106–130 under a 300–600 ring. None of
+these three behaviours is possible with a camera-facing sprite.
+
+**`Solar.mp4`** — 30.000 s, eight planets plus the Moon, 570 stars,
+orbit rings, and a camera flying a keyed schedule (theta +1.4°/s,
+phi −24°→−50°, height 13.5 → 10.2 → 17.5 → 14.5). Verified by a
+full-scene replica rendered at the same clock and diffed pixel by
+pixel: mean|Δ| 1.67 with zero missing regions at t=24.
+
+**Two renderer laws found on the way** (see DEBUGGING.md for the
+methods):
+
+- **The euler flip.** Mixing a per-frame `set_phi` with accumulated
+  `increment_theta` drifts into a flipped representation — measured at
+  23 s: theta 8.2°, phi +43.8° where 100.2°, −43.8° was meant, planets
+  "vanished" because they were elsewhere. Cure: set all three angles
+  absolutely with `reorient` every frame; 900 steps of that leave the
+  orientation matrix exact.
+- **Depth write is poison for additive layers.** A shell's front
+  surface writes depth and rejects the next shell's back hemisphere, so
+  the composite falls short of its parts. Cure: a `depth_write` opt-out
+  in the renderer — test on, write off. Both patches live as one diff
+  at `our-work/patches/manimgl-glow-renderer.patch` in the live
+  workspace; the plugin's 94 tests pass with them applied.
+
+**Pending his verdict, unchanged:** whether the corona becomes plugin
+API (a `Sun` preset, an emission parameter, or nothing), whether
+`sun.py` is re-rendered with the shell corona, and the older question
+of re-rendering the first videos' colours.
 
 Still open, unchanged from before:
 
@@ -193,8 +215,9 @@ Still open, unchanged from before:
 
 A sandbox law worth knowing: workspace snapshots strip `.git/config`
 (credential hygiene), so **every reset removes the remotes from all
-local repos**. Re-add them from the account before pushing; the URLs
-are in `our-work/remotes.md` in the live workspace.
+local repos** — and this time the whole of `manim-handover/.git` went
+with it. Re-init, fetch, update-ref, then push; the URLs are in
+`our-work/remotes.md` in the live workspace.
 
 ---
 
@@ -203,6 +226,9 @@ are in `our-work/remotes.md` in the live workspace.
 - **No shadows in the renderer.** The two Saturn shadows are solved for
   that one geometry. Nothing else casts anything.
 - **One light source**, no PBR, no normal maps, no transparency sorting.
+- **The corona is shells, not a true volume.** Beyond ~2.7R the faint
+  tail's shell surface can sit nearer the camera than a planet, so the
+  veil there is an approximation, not a line integral.
 - **No physics, no rigging.** This is an illustration toolkit, not a
   renderer. For photorealism or simulation, model in Blender, export
   `.obj` or `.glb`, and bring the result here for the explaining.

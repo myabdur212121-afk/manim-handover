@@ -29,17 +29,23 @@ image already has Python, numpy, scipy, matplotlib and node. Of ManimGL's
 
 ## Getting back to work
 
+The old `tools/restore_env.sh` went with the workspace reorganisation;
+the recipe now lives in `manim-env-setup`, and amounts to this:
+
 ```bash
-bash tools/restore_env.sh --no-latex      # ~45 s  ← use this
-bash tools/restore_env.sh                 # ~2 min, adds the LaTeX suite
+pip install -e src/manimGL -e manimgl-myplugin "setuptools<81" \
+    trimesh fast-simplification av        # ~40 s
+sudo apt-get install -y -q ffmpeg
+bash manim-env-setup/sandbox/manimce/font.sh   # Bengali + CMU fonts
 ```
 
-`--no-latex` skips **775 MB of the 852 MB** apt list. None of the scenes
-need it — they all use `Text`, which goes through Pango. Use the full form
-only for `Tex` / `TexText`.
+LaTeX (~775 MB) is only needed for `Tex` / `TexText`; the scenes all
+use `Text`, which goes through Pango. Skipping the fonts once turned
+every Bengali caption into boxes.
 
-Fonts are installed either way; skipping them once turned every Bengali
-caption into boxes.
+The glow patches in `src/manimGL` survive resets with the workspace —
+the editable install picks them up again on the next `pip install -e`,
+and the same diff is kept at `our-work/patches/manimgl-glow-renderer.patch`.
 
 ## The machine
 
@@ -56,6 +62,7 @@ caption into boxes.
 | --- | --- | --- | --- | --- |
 | one building, 48 s | 1280×720 | 7,938 | 2.5 min | 1,132 MB |
 | eight models, 90 s | **2560×1440** | ~70,000 | 13 min | **1,804 MB** |
+| solar system, 30 s | 1280×720 | ~60,000 | 6–10 min | (not yet measured) |
 
 QHD with that much geometry is the ceiling — 78 MB of headroom. For 4K,
 cut geometry first.
@@ -88,17 +95,12 @@ manimgl demos/x.py Scene -w -r 2560x1440 -c "#070B14" --video_dir videos/x
 
 ```
 /home/user/
-├── src/manimgl_myplugin/   the library
-├── src/manimGL/            ManimGL checkout — read it when unsure
-├── demos/                  scenes
-├── tests/                  three files, ~60 checks
+├── manimgl-myplugin/       the library, its own git repo
+├── src/manimGL/            3b1b checkout + glow patches (uncommitted; diff kept in our-work/patches/)
+├── our-work/               non-repo: scenes/, videos/, patches/, remotes.md, README
+├── manim-env-setup/        environment recipes (other account, read-only)
+├── manim-handover/         this repository
 ├── models/                 .obj files and textures
-├── videos/                 renders (never committed)
-├── docs/                   guide, architecture note, reports
-├── packaging/              the README / notes that go to the repos
-├── prototypes/             throwaway experiments and their stills
-├── tools/                  restore_env.sh, trace_boot.sh, fetchers
-├── logs/                   restore logs, memory traces, boot trace
 └── secrets/                the GitHub token — never commit this
 ```
 

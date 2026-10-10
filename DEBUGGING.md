@@ -155,6 +155,33 @@ A failure then reads like a sentence and points straight at the entry in
 
 ---
 
+## Prove 3D with an occluder, and nothing else
+
+A glow's depth behaviour is only proven by something passing in front
+of it. Single-planet stills (planet alone, same camera keys) give the
+exact screen position to probe; measure the luminance there against
+the same radius around it. Two traps met on the way: bright patches
+near the sun's centre that "confirmed" planets turned out to be corona
+light, and one slow dark dot that turned out to be a sunspot drifting
+with the camera. Blob-hunting in a starfield is noise; a known-position
+probe is not.
+
+## The replica diff
+
+Re-render the whole scene at a chosen clock — same seeds, same keys —
+and diff it against the video frame pixel by pixel. The pass line used
+here: mean|Δ| ≈ 1.7 with zero missing regions. This one check caught
+the euler flip (every planet elsewhere), confirmed the shell corona
+inside the full scene, and pinned the camera where radial symmetry
+alone could not.
+
+## Reproduce camera drift without rendering
+
+`CameraFrame` plus the exact updater sequence in pure Python — 900
+steps in under three seconds, no render — showed the euler flip
+directly as numbers, and showed the cure (absolute `reorient`) as an
+exact matrix match.
+
 ## Sandbox habits
 
 - `bash tools/restore_env.sh --no-latex` after every reset — 45 s.

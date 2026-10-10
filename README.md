@@ -19,10 +19,10 @@ Nothing below is a summary of chat; it is the working state.
 | [`DEBUGGING.md`](DEBUGGING.md) | the specific techniques that found the real bugs |
 | [`ENVIRONMENT.md`](ENVIRONMENT.md) | the sandbox, what survives a reset, how to get back to work |
 | [`DECISIONS.md`](DECISIONS.md) | every consequential choice and the reason for it |
-| `workspace/` | every file from the working directory |
 
 Five minutes on the first two is enough to continue without asking the
-user to repeat himself.
+user to repeat himself. The working files themselves live in the live
+sandbox workspace, not here; this repository is the memory.
 
 ---
 
@@ -37,24 +37,29 @@ helpers work today:
 | `shapes` | meshes from formulas — revolve, extrude, or borrow any ManimGL surface |
 | `astro` | planets, moons, rings, with geography and orbits |
 
-**60+ tests pass in about a minute.** Two live repositories:
+**94 tests pass in about a minute.** Two live repositories:
 
 - [`manimgl-myplugin`](https://github.com/myabdur212121-afk/manimgl-myplugin) — the clean package
 - [`manim-projects`](https://github.com/myabdur212121-afk/manim-projects) — the archive, under `2026/manimgl_myplugin/`
 
-Next on the list: **the Sun** — it emits light rather than receiving it, so
-it needs different handling, and the corona is the hard part.
+The Sun's glow is solved at prototype level — true fresnel shells in
+3D, proven by occlusion — see HANDOVER.md §3. The open question is
+whether it enters the plugin.
 
 ---
 
 ## Before you do anything
 
 ```bash
-cd workspace
-bash tools/restore_env.sh --no-latex      # ~45 s, the toolchain is not persistent
+# the toolchain is not persistent — recipe in manim-env-setup, sandbox/manimgl/
+pip install -e src/manimGL -e manimgl-myplugin "setuptools<81" \
+    trimesh fast-simplification av        # ~40 s
+sudo apt-get install -y -q ffmpeg
+bash manim-env-setup/sandbox/manimce/font.sh   # Bengali + CMU fonts
+cd manimgl-myplugin
 python3 tests/test_obj.py                 # 21
 python3 tests/test_shapes.py              # 18
-python3 tests/test_astro.py               # 29
+python3 tests/test_astro.py               # 55
 ```
 
 If those pass, the library is intact and you can start. If one fails, the

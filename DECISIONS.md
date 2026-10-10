@@ -95,6 +95,24 @@ Sahara comes out in the Pacific.
 **No rendered video in any repository** *(user's instruction, twice)*.
 Scenes and input assets only, so anything can be re-rendered.
 
+**The glow is fresnel shells, not sprites** *(user's demand, 2026-10-11:
+"make a glow effect perfectly in 3d not 2d")*. Six true spheres around
+the sun, depth-tested; a camera-facing sprite cannot be cut by a planet
+in front, and that behaviour is the point.
+
+**Fresnel enters through `set_color_by_code`**, not a renderer patch —
+the insertion point in `finalize_color` already sees
+`frame.camera_position`, `point` and `normal`. The renderer was touched
+only where it had to be: additive blending and the depth-write opt-out.
+
+**Camera angles are set absolutely every frame** — accumulating
+`increment_theta` while re-stating `set_phi` drifts into a flipped
+euler representation (measured: theta 8.2° where 100.2° was meant).
+
+**Glow opacities are solved, not eyed.** Render each shell alone,
+measure its response, nnls the opacities against the target profile;
+hand-tuning had come out 15–40% off.
+
 **Root README is identity, not reference** *(user's correction)*. What the
 thing is for, a table of helpers, what it deliberately cannot do. Class
 detail lives in `docs/<helper>/reference.md`.
@@ -120,5 +138,8 @@ to its root README: one index row, one bullet.
 | `smooth_subdivide` on architecture | Loop subdivision melts sharp corners |
 | a Frenet frame for `extrude` | flips where the path straightens |
 | alpha for soft ring transparency | the shader overwrites it |
+| forward-fresnel shells for the tail | brightest at their own rim — the sum cannot decay |
+| dot-art glow | the user's rejection, in so many words |
+| X-ray overlays on the corona | draws over a planet that is genuinely in front |
 | rebaking the globe shadow every frame | ~1 s per bake |
 | `apply_rotation` as a name | collides with manim's `apply_*` meaning |
