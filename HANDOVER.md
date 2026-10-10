@@ -47,7 +47,7 @@ What he is like to work with, from a long collaboration:
 
 ## 2. What exists
 
-### `manimgl_myplugin` — a ManimGL plugin, ~3,400 lines
+### `manimgl_myplugin` — a ManimGL plugin, ~4,500 lines plus ~1,500 of tests
 
 **ManimGL only.** It subclasses ManimGL's `Surface`, writes its wgsl
 buffers directly and uses `camera.light_source`. ManimCE's renderer is a
@@ -128,32 +128,73 @@ only two lines were added to its root README.
 | `13_spin` | 21 s | spin() vs rotate() side by side |
 | `14_geography` | 23 s | markers, arcs, graticule, orbit |
 
+The demos of the current phase (2026-10-10) live in `our-work/videos/` in
+the live workspace, not in any repo, and supersede the list above for
+ongoing work:
+
+| scene | length | shows |
+| --- | --- | --- |
+| `tour` | 47 s | the whole plugin in one pass |
+| `api2` | 55 s | the surface family: place_on_surface, surface_text, surface_mathtex, cell_note, marker |
+| `features` | 29 s | graticule highlights, labels, see_through (probe: +51% grid visible through the globe) |
+| `bncurve` | 26 s | Bengali surface_text — the bend measured, tangent-plane and naive flats for contrast |
+| `sun` | 24 s | the emissive body, light at its centre, corona rim + tail |
+
 ---
 
 ## 3. Where it stopped
 
-Everything above works and is pushed. **The Sun is the agreed next
-subject** and was discussed but not started.
+*Updated 2026-10-10; the previous stopping point (the Sun named but not
+started) is preserved in git history.*
 
-What makes it different from a planet:
+**The Sun was started, measured, and filmed — but not put in the plugin.**
+A prototype lives in `our-work/scenes/sun.py` (never imported by the
+package). What the probes settled:
 
-- It **emits**. `shading=(0, 0, 0)` and a bright texture — it must not be
-  lit by the scene light, because it *is* the scene light.
-- The scene's `camera.light_source` should sit at its centre so the
-  planets are lit correctly from it.
-- **The corona is the hard part.** It is not geometry. Options worth
-  thinking about: a `DotCloud` halo, a few nested translucent spheres with
-  falloff, or a billboard that always faces the camera. None of them is
-  obviously right, and the renderer has no bloom, so it deserves the same
-  treat-it-as-a-question approach as the rings did.
+- The emissive body works: `Body(texture="sun")` with
+  `globe.set_shading(0, 0, 0)` renders direction-independent (halves
+  401/376 and 353/424 of 765; the rest is the texture's own sunspots).
+  Texture `2k_sun.jpg` from Solar System Scope (CC BY 4.0), now in
+  `~/models`.
+- Moving `camera.light_source` to the sun's centre makes planets lit
+  from it and nothing else: with the light flipped to the antipode the
+  bright half of Venus flipped with it (centroid pull -2.4 px vs
+  +4.0 px).
+- The corona, three candidates measured side by side: a `DotCloud` shell
+  of small dots is the only one with a tail (1.5–2R at about twice the
+  background luminance); nested translucent spheres render perfectly
+  cleanly (the sorting fear was wrong) but stop hard at 1.3R; one big
+  glowing `DotCloud` dot is a smooth rim with a short tail. The demo
+  layers rim + tail: 392 -> 88 -> 62 -> 51 -> 35 out to 2.5R.
+- **Pending his verdict:** whether any of this becomes a `Sun` preset,
+  an emission parameter, or a corona helper in the package. Nothing was
+  committed to the plugin for it.
 
-Other things named but not decided:
+**The surface family grew up.** Since the handover the astro API gained
+`place_on_surface`, `surface_text` (any script — Bengali measured: all
+474 points on the r(1+h) shell within 0.002, edge slope 18.09 deg
+against a longitude span of 18.07 deg, so the bend is geometry, not
+font), `surface_tex`, `surface_mathtex`, `surface_cell_note`,
+`surface_point`, `label`, and the pinned `cell_note`; the graticule
+gained highlights, value labels and `see_through`; bodies gained
+`shed_overlays`. `flat_map` was proposed and dropped — the minimal-API
+rule held. Notes 2.13–2.19 record the laws found on the way, including
+2.19: manimlib's `Text`/`Tex` take `color` to Pango but the glyph fills
+come back white, so the plugin carries the colour over with `set_fill`
+— every coloured caption in every video before 2026-10-10 was silently
+monochrome, and the plugin's tests now guard against it (94 green).
 
-- A second look at whether `MeshData` should move out of the `obj` helper
-  into shared ground. Two helpers use it now; a third would settle it.
-- `astro` presets download textures on first use, which is slow the first
-  time and needs a network. No offline story yet.
-- No DEM is bundled for any body. `dem=` takes a path if the user has one.
+Still open, unchanged from before:
+
+- Whether `MeshData` should move out of the `obj` helper. Two helpers
+  use it; a third would settle it.
+- Presets download textures on first use; no offline story yet.
+- No DEM is bundled for any body.
+
+A sandbox law worth knowing: workspace snapshots strip `.git/config`
+(credential hygiene), so **every reset removes the remotes from all
+local repos**. Re-add them from the account before pushing; the URLs
+are in `our-work/remotes.md` in the live workspace.
 
 ---
 

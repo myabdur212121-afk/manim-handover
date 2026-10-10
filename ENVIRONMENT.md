@@ -13,9 +13,13 @@ Only **`/home/user`** is saved between sessions.
 | project files | `/home/user` | ✅ |
 | `pip install` | `/usr/local/lib/python3.13/site-packages` | ❌ |
 | `apt install` | `/usr/bin`, `/usr/lib` | ❌ |
+| repo remotes (`.git/config`) | inside `/home/user`, but stripped | ❌ |
 
 So `manimlib`, `ffmpeg` and LaTeX disappear regularly, while the code
-stays. This is normal platform behaviour, not a fault, and not caused by
+stays. One row deserves its own sentence: `.git/config` is stripped from
+snapshots (credential hygiene), so **every reset silently removes the
+remotes from all local repos** — re-add them before any push; the URLs
+are in `our-work/remotes.md` in the live workspace. This is normal platform behaviour, not a fault, and not caused by
 anything the assistant does — one turn began with the machine 21 seconds
 old, before a single command had run.
 
