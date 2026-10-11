@@ -45,7 +45,9 @@ every Bengali caption into boxes.
 
 The glow patches in `src/manimGL` survive resets with the workspace —
 the editable install picks them up again on the next `pip install -e`,
-and the same diff is kept at `our-work/patches/manimgl-glow-renderer.patch`.
+and the same diff is carried in this repository at
+`patches/manimgl-glow-renderer.patch` (and at `our-work/patches/` in the
+live workspace).
 
 ## The machine
 
@@ -99,7 +101,7 @@ manimgl demos/x.py Scene -w -r 2560x1440 -c "#070B14" --video_dir videos/x
 ├── src/manimGL/            3b1b checkout + glow patches (uncommitted; diff kept in our-work/patches/)
 ├── our-work/               non-repo: scenes/, videos/, patches/, remotes.md, README
 ├── manim-env-setup/        environment recipes (other account, read-only)
-├── manim-handover/         this repository
+├── manim-handover/         this repository; carries the sun scenes and the glow patch too
 ├── models/                 .obj files and textures
 └── secrets/                the GitHub token — never commit this
 ```

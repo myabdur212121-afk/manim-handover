@@ -21,8 +21,9 @@ Nothing below is a summary of chat; it is the working state.
 | [`DECISIONS.md`](DECISIONS.md) | every consequential choice and the reason for it |
 
 Five minutes on the first two is enough to continue without asking the
-user to repeat himself. The working files themselves live in the live
-sandbox workspace, not here; this repository is the memory.
+user to repeat himself. This repository is the memory. It also carries the two
+sun scenes and the glow renderer patch (`scenes/`, `patches/`); rendered
+video stays in the live workspace on purpose.
 
 ---
 
@@ -37,14 +38,13 @@ helpers work today:
 | `shapes` | meshes from formulas — revolve, extrude, or borrow any ManimGL surface |
 | `astro` | planets, moons, rings, with geography and orbits |
 
-**94 tests pass in about a minute.** Two live repositories:
+**99 tests pass in about a minute.** Two live repositories:
 
 - [`manimgl-myplugin`](https://github.com/myabdur212121-afk/manimgl-myplugin) — the clean package
 - [`manim-projects`](https://github.com/myabdur212121-afk/manim-projects) — the archive, under `2026/manimgl_myplugin/`
 
-The Sun's glow is solved at prototype level — true fresnel shells in
-3D, proven by occlusion — see HANDOVER.md §3. The open question is
-whether it enters the plugin.
+The Sun's glow is in the plugin now — `astro.Sun()`, true fresnel shells
+in 3D, proven by occlusion; see HANDOVER.md §3.
 
 ---
 
@@ -59,7 +59,7 @@ bash manim-env-setup/sandbox/manimce/font.sh   # Bengali + CMU fonts
 cd manimgl-myplugin
 python3 tests/test_obj.py                 # 21
 python3 tests/test_shapes.py              # 18
-python3 tests/test_astro.py               # 55
+python3 tests/test_astro.py               # 60
 ```
 
 If those pass, the library is intact and you can start. If one fails, the

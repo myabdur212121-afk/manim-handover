@@ -80,9 +80,9 @@ There is deliberately **no `sphere()` or `cube()`**. ManimGL has those;
 `from_surface` borrows all of them in one function. The plan started at
 ten shape functions and ended at three, which was an improvement.
 
-#### `astro` — planets, moons, rings
+#### `astro` — planets, moons, rings, the Sun
 
-Nine bodies, each carrying only measured facts. `Body` for anything else.
+Ten bodies, each carrying only measured facts. `Body` for anything else.
 
 ```python
 Earth()                            # every default is a real value
@@ -102,13 +102,17 @@ moon.orbit(earth, radius=5.2, period=9, tilt=12)
 Both Saturn shadows are solved analytically and painted in, because the
 renderer has none at all.
 
+The Sun is a `Body` too, wrapped in the corona (§3): `Sun(radius=1.6)`
+is the whole star in one bare call, `Sun(corona=False)` the bare globe.
+The corona needs the glow renderer patch, carried at `patches/` here.
+
 ### Repositories
 
 | | |
 | --- | --- |
 | [`manimgl-myplugin`](https://github.com/myabdur212121-afk/manimgl-myplugin) | the package: code, docs, examples, tests |
 | [`manim-projects`](https://github.com/myabdur212121-afk/manim-projects) | his archive; this lives at `2026/manimgl_myplugin/` |
-| this one | the handover documents only — the old `workspace/` tree was dissolved when the work moved to the live workspace |
+| this one | the handover documents, plus `patches/` (the glow renderer diff) and `scenes/` (the two sun demos) — the old `workspace/` tree was dissolved when the work moved to the live workspace |
 
 `manim-projects` has its own house style — projects by year, each in a
 folder, an index table in the README, **no rendered output**. Respect it;
@@ -197,14 +201,23 @@ methods):
 - **Depth write is poison for additive layers.** A shell's front
   surface writes depth and rejects the next shell's back hemisphere, so
   the composite falls short of its parts. Cure: a `depth_write` opt-out
-  in the renderer — test on, write off. Both patches live as one diff
-  at `our-work/patches/manimgl-glow-renderer.patch` in the live
-  workspace; the plugin's 94 tests pass with them applied.
+  in the renderer — test on, write off. Both patches live as one diff, carried in
+  this repository at `patches/manimgl-glow-renderer.patch` (and in
+  `our-work/patches/` in the live workspace); the plugin's 99 tests pass
+  with them applied.
 
-**Pending his verdict, unchanged:** whether the corona becomes plugin
-API (a `Sun` preset, an emission parameter, or nothing), whether
-`sun.py` is re-rendered with the shell corona, and the older question
-of re-rendering the first videos' colours.
+**Settled 2026-10-11: the corona entered the plugin.** `astro.Sun()`,
+commit `3a31118` — one bare call returns the unlit globe plus the six
+shells, `corona=False` leaves the star bare, and the shells draw at
+`z_index 1` so the scene's add order cannot matter. Measured on a probe
+still: a transit reads 50% of the disc around it, a body behind the rim
+gains ~+80 under the light, and both orders of adding differ by nothing
+measured (cut 119.1 = 119.1, ring annulus 41.48 = 41.48). The measured
+table is `CORONA_SHELLS`; astro carries 60 tests now.
+
+**Still pending his verdict:** whether `sun.py` is re-rendered with the
+shell corona, and the older question of re-rendering the first videos'
+colours.
 
 Still open, unchanged from before:
 

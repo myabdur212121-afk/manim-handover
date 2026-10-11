@@ -1,0 +1,112 @@
+--- /tmp/pristine/manimlib/renderer/pipeline.py	2026-10-10 21:11:00.481832659 +0000
++++ src/manimGL/manimlib/renderer/pipeline.py	2026-10-10 20:41:44.137832659 +0000
+@@ -34,6 +34,27 @@
+     },
+ }
+ 
++# Light that adds to whatever is behind it rather than tinting it -- the way a glow
++# has to behave to read as light, since tinting can only darken a bright background.
++# Asked for by name on a mobject: mob.blend_mode = "add".
++BLEND_ADD = {
++    "color": {
++        # Source light scaled by its own alpha -- where a glow shader has put
++        # its falloff -- then added to whatever is behind: the classic
++        # (SRC_COLOUR * SRC_ALPHA) + DST_COLOUR. Plain one/one would ignore
++        # the falloff and add full strength across the whole quad.
++        "src_factor": wgpu.BlendFactor.src_alpha,
++        "dst_factor": wgpu.BlendFactor.one,
++        "operation": wgpu.BlendOperation.add,
++    },
++    "alpha": {
++        "src_factor": wgpu.BlendFactor.one,
++        "dst_factor": wgpu.BlendFactor.one,
++        "operation": wgpu.BlendOperation.add,
++    },
++}
++BLENDS = {"alpha": BLEND, "add": BLEND_ADD}
++
+ 
+ @dataclass(frozen=True)
+ class PipelineState:
+@@ -49,6 +70,9 @@
+     depth_test: bool | None = None
+     depth_write: bool = True
+     color_write: bool = True
++    # How the color channels blend, "alpha" the usual way and "add" light that
++    # accumulates, see BLENDS above
++    blend: str = "alpha"
+     # What the stencil buffer is compared against, "always" leaving it out of the decision
+     stencil_compare: str = "always"
+     # What to leave in the stencil buffer when the test fails, when depth fails, and when
+@@ -113,7 +137,7 @@
+             "entry_point": "fs_main",
+             "targets": [{
+                 "format": COLOR_FORMAT,
+-                "blend": BLEND,
++                "blend": BLENDS[state.blend],
+                 "write_mask": state.color_write_mask,
+             }],
+         },
+--- /tmp/pristine/manimlib/renderer/drawing.py	2026-10-10 21:11:00.481832659 +0000
++++ src/manimGL/manimlib/renderer/drawing.py	2026-10-10 20:51:03.173832659 +0000
+@@ -3,6 +3,8 @@
+ import numpy as np
+ import wgpu
+ 
++from dataclasses import replace
++
+ from manimlib.renderer.pipeline import DEFAULT
+ from manimlib.renderer.pipeline import KEEP
+ from manimlib.renderer.pipeline import PipelineState
+@@ -89,6 +91,8 @@
+         # together is the whole run's, and for one drawn as part of a run is none
+         self.records = 0
+         self.depth_test = False
++        self.blend = "alpha"
++        self.depth_write = True
+         # Made only for a mobject with images of its own, the rest reading the shared one's
+         self.own_bind_group: Any = None
+         self.shared_bind_group: Any = None
+@@ -119,8 +123,16 @@
+         was making anyway, so that a bundled draw knows to be made again.
+         """
+         depth_test = self.mobject.depth_test
+-        self.invalidated = depth_test != self.depth_test
++        blend = getattr(self.mobject, "blend_mode", "alpha")
++        depth_write = getattr(self.mobject, "depth_write", True)
++        self.invalidated = (
++            depth_test != self.depth_test
++            or blend != self.blend
++            or depth_write != self.depth_write
++        )
+         self.depth_test = depth_test
++        self.blend = blend
++        self.depth_write = depth_write
+ 
+         # Every frame takes a stretch, one lasting only as long as the frame
+         buffer = self.material.uniform_buffer
+@@ -212,6 +224,8 @@
+             and previous.material is self.material
+             and self.repeats_uniforms
+             and self.depth_test == previous.depth_test
++            and self.blend == previous.blend
++            and self.depth_write == previous.depth_write
+         )
+ 
+     # Drawing
+@@ -290,6 +304,15 @@
+         vertices: int,
+         indices: Any = None,
+     ) -> None:
++        if self.blend != "alpha":
++            # a state of its own for light that accumulates, leaving the shared
++            # ones and their caches untouched
++            state = replace(state, blend=self.blend)
++        if not self.depth_write:
++            # additive layers would reject one another's far sides, so a mobject
++            # may ask to test against what is already drawn without adding its
++            # own depth for anyone else
++            state = replace(state, depth_write=False)
+         pipeline = self.material.pipeline(module, state.resolved(self.depth_test))
+         render_pass.draw(pipeline, vertices, indices)
+ 

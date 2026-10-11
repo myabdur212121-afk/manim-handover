@@ -90,6 +90,14 @@ name would mislead.
 longitude −180 and `revolve` starts its sweep on +x. Without it, the
 Sahara comes out in the Pacific.
 
+**The corona entered the plugin as `Sun()`, not an emission parameter
+or a generic `Star`** *(settled 2026-10-11)*. A bare call returns the
+whole star — unlit globe plus six shells — because that is what someone
+explaining the sun wants to say; `corona=False` leaves the star bare.
+The corona is the body, not an overlay: `shed_overlays()` never takes
+it off. The shells draw at `z_index 1` so the scene's add order cannot
+matter. A generic `Star` waits until a second star is actually wanted.
+
 ## Repositories and documents
 
 **No rendered video in any repository** *(user's instruction, twice)*.
